@@ -39,21 +39,28 @@ eval "\$(rbenv-init -)"
 echo \$RBENV_SHELL
 OUT
   chmod +x myscript.sh
-  run ./myscript.sh /bin/zsh
+  run ./myscript.sh
   assert_success "sh"
 }
 
-@test "setup shell completions (fish)" {
+@test "skip shell completions (fish)" {
   root="$(cd $BATS_TEST_DIRNAME/.. && pwd)"
   run rbenv-init - fish
   assert_success
-  assert_line "source '${root}/test/../libexec/../completions/rbenv.fish'"
+  local line="$(grep '^source' <<<"$output")"
+  [ -z "$line" ] || flunk "did not expect line: $line"
+}
+
+@test "posix shell instructions" {
+  run rbenv-init bash
+  assert [ "$status" -eq 1 ]
+  assert_line 'eval "$(rbenv init - bash)"'
 }
 
 @test "fish instructions" {
   run rbenv-init fish
   assert [ "$status" -eq 1 ]
-  assert_line 'status --is-interactive; and source (rbenv init -|psub)'
+  assert_line 'status --is-interactive; and rbenv init - fish | source'
 }
 
 @test "option to skip rehash" {
